@@ -43,6 +43,7 @@
     }
 
     let scoreGained = 0;
+    const mergedCells = [];
 
     for (let lineIndex = 0; lineIndex < 4; lineIndex += 1) {
       const coordinates = coordinatesForLine(direction, lineIndex);
@@ -54,6 +55,8 @@
       for (let index = 0; index < values.length; index += 1) {
         if (values[index] === values[index + 1]) {
           const mergedValue = values[index] * 2;
+          const [row, column] = coordinates[mergedValues.length];
+          mergedCells.push({ row, column });
           mergedValues.push(mergedValue);
           scoreGained += mergedValue;
           index += 1;
@@ -79,11 +82,13 @@
       }
     }
 
+    let spawnedCell = null;
     if (emptyCells.length > 0) {
       const emptyIndex = Math.floor(random() * emptyCells.length);
       const [row, column] = emptyCells[emptyIndex];
       const value = Math.floor(random() * 100) < 10 ? 4 : 2;
       board[row][column] = value;
+      spawnedCell = { row, column };
     }
 
     const wonNow = !state.hasWon && board.some(row => row.some(value => value >= 2048));
@@ -96,6 +101,7 @@
       score: state.score + scoreGained,
       status,
       hasWon,
+      visualEvents: { mergedCells, spawnedCell },
     };
   }
 
@@ -120,13 +126,27 @@
     else if (state.status === 'game-over') modal = 'game-over';
     else if (ui.restartConfirmationOpen) modal = 'restart-confirmation';
 
+    const effects = new Map();
+    state.visualEvents?.mergedCells.forEach(({ row, column }) => {
+      effects.set(row * 4 + column, 'merged');
+    });
+    if (state.visualEvents?.spawnedCell) {
+      const { row, column } = state.visualEvents.spawnedCell;
+      effects.set(row * 4 + column, 'spawned');
+    }
+
     return {
       score: state.score,
       scoreLabel: 'Очки',
-      cells: state.board.flat().map(value => ({
-        value,
-        label: value === null ? 'Пустая клетка' : `Плитка ${value}`,
-      })),
+      cells: state.board.flat().map((value, index) => {
+        const cell = {
+          value,
+          label: value === null ? 'Пустая клетка' : `Плитка ${value}`,
+        };
+        const effect = effects.get(index);
+        if (effect) cell.effect = effect;
+        return cell;
+      }),
       modal,
     };
   }
@@ -241,12 +261,14 @@
     let activeModal = null;
     let focusReturnElement = null;
     let swipeStart = null;
+    let lastVisualEvents = null;
 
     boardElement.setAttribute('tabindex', '0');
 
     const app = {
       render(state = controller.getSnapshot().state, ui = controller.getSnapshot().ui) {
         const view = createViewModel(state, ui);
+        const animateEvents = state.visualEvents && state.visualEvents !== lastVisualEvents;
         const rows = Array.from({ length: 4 }, (_, rowIndex) => {
           const rowElement = document.createElement('div');
           rowElement.className = 'game-row';
@@ -264,6 +286,7 @@
               element.dataset.digits = String(valueText.length);
               if (cell.value > 2048) element.dataset.highValue = 'true';
             }
+            if (animateEvents && cell.effect) element.dataset.effect = cell.effect;
 
             return element;
           });
@@ -272,6 +295,7 @@
         });
 
         boardElement.replaceChildren(...rows);
+        lastVisualEvents = state.visualEvents || null;
         scoreElement.textContent = String(view.score);
         Object.entries(modalElements).forEach(([name, element]) => {
           element.hidden = view.modal !== name;

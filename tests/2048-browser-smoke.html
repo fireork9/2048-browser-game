@@ -61,9 +61,17 @@
         document.querySelector('[data-direction="left"]').click();
         assert(getCells()[0].textContent === '4' && getCells()[1].textContent === '4', 'direction button must merge the first pair and spawn once');
         assert(score.textContent === '4', 'merge must update score');
+        assert(getCells()[0].dataset.effect === 'merged', 'merged tile must receive merge feedback');
+        assert(getCells()[1].dataset.effect === 'spawned', 'new tile must receive spawn feedback');
+        assert(getComputedStyle(getCells()[0]).animationName === 'tile-merge', 'merge feedback must use the merge animation');
+        assert(getComputedStyle(getCells()[0]).animationDuration === '0.22s', 'merge animation must last 220ms');
+        assert(getComputedStyle(getCells()[1]).animationName === 'tile-spawn', 'spawn feedback must use the spawn animation');
+        assert(getComputedStyle(getCells()[1]).animationDuration === '0.18s', 'spawn animation must last 180ms');
+        assert(getComputedStyle(board).backgroundColor === 'rgb(17, 26, 39)', 'board must use the dark terminal panel');
 
         document.querySelector('#new-game').click();
         assert(!restartModal.hidden, 'active game restart must request confirmation');
+        assert(getCells().every(cell => !cell.dataset.effect), 'opening a modal must not replay the last tile animation');
         const beforeBlockedMove = getCells().map(cell => cell.textContent).join(',');
         document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
         assert(getCells().map(cell => cell.textContent).join(',') === beforeBlockedMove, 'modal must block game moves');

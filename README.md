@@ -1,10 +1,14 @@
 # 2048 — Browser Game
 
-A small, dependency-free 2048 game built with HTML, CSS, and vanilla JavaScript.
+A dependency-free 2048 game built with HTML, CSS, and vanilla JavaScript, styled as a neon night-shift terminal.
 
 ## Run
 
 Open `src/2048.html` in a modern browser. No server or build step is required.
+
+## Visual style
+
+A dark terminal palette uses cyan, magenta, and amber neon accents. Spawn and merge feedback is brief and respects the system reduced-motion preference.
 
 ## Controls
 

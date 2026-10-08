@@ -12,6 +12,10 @@ test('declares a Russian page and loads local CSS and JavaScript', () => {
   assert.match(html, /src="2048\.js" defer/);
 });
 
+test('brands the game as a neon night-shift terminal', () => {
+  assert.match(html, /class="game-kicker"[^>]*>NIGHT SHIFT \/\/ NEON GRID<\/p>/);
+});
+
 test('contains the labeled score, board, all direction controls, and game dialogs', () => {
   assert.match(html, /id="score"/);
   assert.match(html, /aria-label="Очки"/);

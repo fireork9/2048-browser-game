@@ -237,6 +237,24 @@ test('continuing a victory with no remaining moves ends the game', () => {
   assert.equal(Game2048.continueAfterVictory(state).status, 'game-over');
 });
 
+test('records merge and spawn cells for visual feedback', () => {
+  const board = [
+    [2, 2, null, null],
+    [null, null, null, null],
+    [null, null, null, null],
+    [null, null, null, null],
+  ];
+  const state = Game2048.makeMove(stateWith(board), 'left', randomForSpawn());
+  assert.ok(state.visualEvents, 'successful move should record visual events');
+  assert.deepEqual(plain(state.visualEvents), {
+    mergedCells: [{ row: 0, column: 0 }],
+    spawnedCell: { row: 0, column: 1 },
+  });
+  const view = plain(Game2048.createViewModel(state));
+  assert.equal(view.cells[0].effect, 'merged');
+  assert.equal(view.cells[1].effect, 'spawned');
+});
+
 test('projects the board and score into accessible cell labels', () => {
   const state = {
     board: [
