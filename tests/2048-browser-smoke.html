@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../src/2048.css">
+  <script>Math.random = () => 0;</script>
+  <script src="../src/2048.js" defer></script>
+  <title>2048 browser smoke test</title>
+</head>
+<body>
+  <main class="game-shell">
+    <header class="game-header">
+      <h1>2048</h1>
+      <div class="score-card" aria-label="Очки"><span>Очки</span><output id="score" aria-live="polite">0</output></div>
+      <button class="primary-button" id="new-game" type="button">Новая игра</button>
+    </header>
+    <p class="game-hint">Двигай плитки стрелками или свайпом.</p>
+    <div class="game-board" id="game-board" role="grid" aria-label="Игровое поле 4 на 4"></div>
+    <div class="direction-pad" role="group" aria-label="Управление">
+      <button type="button" data-direction="up" aria-label="Вверх">↑</button>
+      <button type="button" data-direction="left" aria-label="Влево">←</button>
+      <button type="button" data-direction="down" aria-label="Вниз">↓</button>
+      <button type="button" data-direction="right" aria-label="Вправо">→</button>
+    </div>
+  </main>
+  <section class="modal" id="victory-modal" role="dialog" aria-modal="true" aria-labelledby="victory-title" hidden>
+    <div class="modal-card"><h2 id="victory-title">Победа</h2><button type="button" data-modal-action="continue">Продолжить</button><button type="button" data-modal-action="new-game">Новая игра</button></div>
+  </section>
+  <section class="modal" id="game-over-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title" hidden>
+    <div class="modal-card"><h2 id="game-over-title">Ходов не осталось</h2><button type="button" data-modal-action="new-game">Новая игра</button></div>
+  </section>
+  <section class="modal" id="restart-modal" role="dialog" aria-modal="true" aria-labelledby="restart-title" hidden>
+    <div class="modal-card"><h2 id="restart-title">Начать заново?</h2><button type="button" data-modal-action="cancel-restart">Продолжить</button><button type="button" data-modal-action="confirm-restart">Начать заново</button></div>
+  </section>
+  <output id="test-result">RUNNING</output>
+  <script>
+    window.addEventListener('load', () => {
+      const board = document.querySelector('#game-board');
+      const score = document.querySelector('#score');
+      const restartModal = document.querySelector('#restart-modal');
+      const result = document.querySelector('#test-result');
+      const getCells = () => [...board.querySelectorAll('[role="gridcell"]')];
+      const assert = (condition, message) => {
+        if (!condition) throw new Error(message);
+      };
+
+      try {
+        const rows = [...board.children];
+        assert(rows.length === 4, 'grid must contain four rows');
+        assert(rows.every(row => row.getAttribute('role') === 'row' && row.children.length === 4 && [...row.children].every(cell => cell.getAttribute('role') === 'gridcell')), 'each grid row must own four grid cells');
+        assert(getCells().length === 16, 'initial render must create 16 cells');
+        assert(getCells().filter(cell => cell.textContent === '2').length === 2, 'new game must contain two 2 tiles');
+        assert(score.textContent === '0', 'new game score must be zero');
+        const shellBounds = document.querySelector('.game-shell').getBoundingClientRect();
+        const firstCellBounds = getCells()[0].getBoundingClientRect();
+        assert(shellBounds.left >= 0 && shellBounds.right <= window.innerWidth, 'game content must fit the viewport');
+        assert(Math.abs(firstCellBounds.width - firstCellBounds.height) < 1, 'board cells must remain square');
+        assert([...document.querySelectorAll('[data-direction]')].every(button => button.getBoundingClientRect().width >= 44 && button.getBoundingClientRect().height >= 44), 'direction buttons must be touch-sized');
+
+        document.querySelector('[data-direction="left"]').click();
+        assert(getCells()[0].textContent === '4' && getCells()[1].textContent === '4', 'direction button must merge the first pair and spawn once');
+        assert(score.textContent === '4', 'merge must update score');
+
+        document.querySelector('#new-game').click();
+        assert(!restartModal.hidden, 'active game restart must request confirmation');
+        const beforeBlockedMove = getCells().map(cell => cell.textContent).join(',');
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+        assert(getCells().map(cell => cell.textContent).join(',') === beforeBlockedMove, 'modal must block game moves');
+        document.querySelector('[data-modal-action="cancel-restart"]').click();
+        assert(restartModal.hidden, 'cancel must close restart confirmation');
+
+        board.focus();
+        const rightKey = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+        board.dispatchEvent(rightKey);
+        assert(rightKey.defaultPrevented, 'handled arrow key must prevent page scrolling');
+        assert(score.textContent === '12', 'keyboard move must update score through the shared move path');
+
+        window.Game2048App.handleSwipe(0, 0, 40, 5);
+        assert(getCells()[0].textContent === '4' && getCells()[2].textContent === '4' && getCells()[3].textContent === '8', 'right swipe helper must move tiles through the shared move path');
+        document.querySelector('[data-direction="down"]').click();
+        assert(getCells()[12].textContent === '4' && getCells()[14].textContent === '4' && getCells()[15].textContent === '8', 'down button must move tiles to the bottom edge');
+        document.querySelector('[data-direction="up"]').click();
+        assert([0, 1, 2, 3].map(index => getCells()[index].textContent).join(',') === '8,4,4,8', 'up button must move tiles to the top edge');
+        assert(score.textContent === '20', 'up merge must add its result to the score');
+
+        document.querySelector('#new-game').click();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+        assert(restartModal.hidden, 'Escape must cancel restart confirmation');
+        document.querySelector('#new-game').click();
+        document.querySelector('[data-modal-action="confirm-restart"]').click();
+        assert(score.textContent === '0', 'confirmed restart must clear the score');
+        assert(getCells().filter(cell => cell.textContent === '2').length === 2, 'confirmed restart must create two new tiles');
+
+        result.textContent = 'PASS: page render, button move, keyboard, swipe, restart confirmation, Escape, and confirmed restart';
+      } catch (error) {
+        result.textContent = `FAIL: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

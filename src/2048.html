@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2048</title>
+  <link rel="stylesheet" href="2048.css">
+  <script src="2048.js" defer></script>
+</head>
+<body>
+  <main class="game-shell">
+    <header class="game-header">
+      <h1>2048</h1>
+      <div class="score-card" aria-label="Очки">
+        <span>Очки</span>
+        <output id="score" aria-live="polite">0</output>
+      </div>
+      <button class="primary-button" id="new-game" type="button">Новая игра</button>
+    </header>
+
+    <p class="game-hint" id="game-hint">Двигай плитки стрелками или свайпом. Одинаковые числа объединяются.</p>
+    <div class="game-board" id="game-board" role="grid" aria-label="Игровое поле 4 на 4"></div>
+
+    <div class="direction-pad" role="group" aria-label="Управление движением плиток">
+      <button class="direction-button direction-up" type="button" data-direction="up" aria-label="Вверх">↑</button>
+      <button class="direction-button direction-left" type="button" data-direction="left" aria-label="Влево">←</button>
+      <button class="direction-button direction-down" type="button" data-direction="down" aria-label="Вниз">↓</button>
+      <button class="direction-button direction-right" type="button" data-direction="right" aria-label="Вправо">→</button>
+    </div>
+  </main>
+
+  <section class="modal" id="victory-modal" role="dialog" aria-modal="true" aria-labelledby="victory-title" hidden>
+    <div class="modal-card">
+      <h2 id="victory-title">Победа! Ты собрал 2048.</h2>
+      <div class="modal-actions">
+        <button class="primary-button" type="button" data-modal-action="continue">Продолжить</button>
+        <button class="secondary-button" type="button" data-modal-action="new-game">Новая игра</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="modal" id="game-over-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title" hidden>
+    <div class="modal-card">
+      <h2 id="game-over-title">Ходов не осталось</h2>
+      <button class="primary-button" type="button" data-modal-action="new-game">Новая игра</button>
+    </div>
+  </section>
+
+  <section class="modal" id="restart-modal" role="dialog" aria-modal="true" aria-labelledby="restart-title" hidden>
+    <div class="modal-card">
+      <h2 id="restart-title">Начать заново?</h2>
+      <p>Текущая партия будет потеряна.</p>
+      <div class="modal-actions">
+        <button class="secondary-button" type="button" data-modal-action="cancel-restart">Продолжить</button>
+        <button class="primary-button" type="button" data-modal-action="confirm-restart">Начать заново</button>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
